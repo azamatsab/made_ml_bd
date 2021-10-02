@@ -1,0 +1,2 @@
+MapReduce result: mean = 152.7206871868289   var = 57672.84569843391
+Numpy test result: mean = 152.7206871868289 var = 57672.84569843359
