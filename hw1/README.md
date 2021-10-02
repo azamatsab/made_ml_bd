@@ -68,3 +68,5 @@ Hadoop trash, как и обычная корзина, защищает от с�
 
 ## Блок 3
          mapred streaming -input /prices.csv -output out00 -mapper 'python3 mapper.py' -reducer 'python3 reducer.py' -file mapper.py -file reducer.py
+
+Посчитанные значения можно посмотреть в __results.txt__
