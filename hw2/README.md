@@ -32,14 +32,12 @@ b. Самый популярный тэг на ластфм:
 
 c. Самые популярные исполнители 10 самых популярных тегов ластфм
 
-        SELECT DISTINCT k.scrobbles_lastfm, k.artist_lastfm FROM 
-            (SELECT f.tags, f.artist_lastfm, f.scrobbles_lastfm FROM 
-                (SELECT tags, artist_lastfm, scrobbles_lastfm 
-                    FROM artists LATERAL VIEW explode(SPLIT(tags_lastfm, ";")) intable AS tags) f WHERE f.tags in
-            (SELECT g.tags FROM 
-                (SELECT t.tags, sum(scrobbles_lastfm) as total FROM 
-                    (SELECT tags, artist_lastfm, scrobbles_lastfm FROM artists LATERAL VIEW explode(SPLIT(tags_lastfm, ";")) intable AS tags) t 
-                        GROUP BY t.tags ORDER BY total DESC LIMIT 10) g)) k ORDER BY k.scrobbles_lastfm DESC LIMIT 10;
+        WITH exploded_table AS 
+            (SELECT tags, artist_lastfm, scrobbles_lastfm FROM artists LATERAL VIEW explode(SPLIT(tags_lastfm, ";")) intable AS tags)
+        SELECT DISTINCT k.scrobbles_lastfm, k.artist_lastfm FROM
+            (SELECT tags, artist_lastfm, scrobbles_lastfm FROM exploded_table WHERE tags in
+            (SELECT g.tags FROM (SELECT tags, sum(scrobbles_lastfm) as total FROM exploded_table 
+            GROUP BY tags ORDER BY total DESC LIMIT 10) g)) k ORDER BY k.scrobbles_lastfm DESC LIMIT 10;
                         
 Результат:
         
