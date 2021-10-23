@@ -9,7 +9,7 @@ object Main {
   val metrics = new Metrics
 
   val ValPath = "validation.txt"
-  val TestPath = "testResults.txt"
+  val TestPath = "testPreds.txt"
 
   def main(args: Array[String]): Unit = {
     val data = reader.readCSV(args(0), drop=1)
