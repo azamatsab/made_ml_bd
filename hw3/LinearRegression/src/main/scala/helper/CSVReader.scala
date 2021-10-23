@@ -1,9 +1,9 @@
-package custom_math
+package helper
 
 class CSVReader {
-  def readCSV(path: String) : Array[Array[Double]] = {
+  def readCSV(path: String, drop: Int): Array[Array[Double]] = {
     io.Source.fromFile(path)
-      .getLines().drop(1)
+      .getLines().drop(drop)
       .map(_.split(",").map(_.trim.toDouble))
       .toArray
   }

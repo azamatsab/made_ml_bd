@@ -1,0 +1,2 @@
+MAE score on validation: 6.557599501988924
+RMSE score on validation: 8.591062235984664

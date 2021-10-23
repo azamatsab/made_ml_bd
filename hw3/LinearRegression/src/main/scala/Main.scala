@@ -1,26 +1,31 @@
-import custom_math.LinRegression
-import custom_math.CSVReader
-import custom_math.DataSplitter
-import custom_math.Metrics
-import custom_math.Preprocessor
+import helper.{CSVReader, DataSplitter, FileWriter, LinRegression, Metrics, Preprocessor}
 
 object Main {
-  val DataPath = "Real estate.csv"
   val reader = new CSVReader
   val preprocessor = new Preprocessor
   val splitter = new DataSplitter
-
-  val data = reader.readCSV(DataPath)
-  val dataMatrix = preprocessor.create_matrix(data)
-  val (xTrain, yTrain, xVal, yVal) = splitter.split(dataMatrix, 100)
-
+  val writer = new FileWriter
   val model = new LinRegression
   val metrics = new Metrics
 
+  val ValPath = "validation.txt"
+  val TestPath = "testResults.txt"
+
   def main(args: Array[String]): Unit = {
+    val data = reader.readCSV(args(0), drop=1)
+    val testData = reader.readCSV(args(1), drop=0)
+    val dataMatrix = preprocessor.create_matrix(data)
+    val testMatrix = preprocessor.create_matrix(testData)
+    val (xTrain, yTrain, xVal, yVal) = splitter.split(dataMatrix, 0.1)
+
     model.fit(xTrain, yTrain)
     val predictions = model.predict(xVal)
-    println("MAE score on validation: " + metrics.mae(predictions, yVal))
-    println("RMSE score on validation: " + metrics.rMse(predictions, yVal))
+    val val_info = Array[String]("MAE score on validation: " + metrics.mae(predictions, yVal),
+                                "RMSE score on validation: " + metrics.rMse(predictions, yVal))
+    writer.write(ValPath, val_info)
+
+    val testPreds = model.predict(testMatrix)
+    val testStrPreds = testPreds.map(x => x.toString)
+    writer.write(TestPath, testStrPreds.toArray)
   }
 }
