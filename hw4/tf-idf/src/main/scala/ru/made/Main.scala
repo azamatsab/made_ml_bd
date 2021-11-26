@@ -21,6 +21,9 @@ object Main {
     val docCount = df.count()
 
     // User-defined functions
+    val clean: String => String = _.replaceAll("""[\p{Punct}]""", "").trim
+    val cleanUDF = udf(clean)
+
     def calcWords(text: String): Long = {
       text.split(" ").length
     }
@@ -35,8 +38,6 @@ object Main {
     val dfLower = df.select($"Review", lower($"Review"))
 
     // Удалить все спецсимволы
-    val clean: String => String = _.replaceAll("""[\p{Punct}]""", "").trim
-    val cleanUDF = udf(clean)
     val dfClean = dfLower.withColumn("CleanText", cleanUDF('Review)).select("CleanText")
 
     // Посчитать частоту слова в предложении
@@ -44,20 +45,25 @@ object Main {
       .withColumn("doc_length", calcWordsUdf(col("CleanText")))
     val columns = textLenCount.columns.map(col) :+
       (explode(split(col("CleanText"), " ")) as "token")
-    val unfoldedDocs = textLenCount.select(columns: _*)
+    val flattened = textLenCount.select(columns: _*)
 
-    val tfCount = unfoldedDocs.groupBy("doc_id", "token", "doc_length")
+    val tfCount = flattened.groupBy("doc_id", "token", "doc_length")
       .agg(count("CleanText") / col("doc_length") as "tf")
 
     // Посчитать количество документов со словом
-    val dfCount = unfoldedDocs.groupBy("token")
+    val dfCount = flattened.groupBy("token")
       .agg(countDistinct("doc_id") as "df")
 
+    // Посчитать idf
+    val idfCount = dfCount.withColumn("idf", calcIdfUdf(col("df")))
+
     // Взять только 100 самых встречаемых.
-    val idfCount = dfCount.withColumn("idf", calcIdfUdf(col("df"))).orderBy(asc("idf")).limit(100)
+    val tokenCount = flattened.groupBy("token")
+      .agg(count("CleanText") as "count").orderBy(desc("count")).limit(100)
+    val idfCountLim = tokenCount.join(idfCount, Seq("token"), "left")
 
     // Сджойнить две полученные таблички и посчитать Tf-Idf (только для слов из предыдущего пункта)
-    val tfIdf = idfCount
+    val tfIdf = idfCountLim
       .join(tfCount, Seq("token"), "left")
       .withColumn("tf_idf", col("tf") * col("idf")).select("token", "tf_idf", "doc_id")
       .groupBy("doc_id").pivot("token").sum("tf_idf").orderBy("doc_id").na.fill(0)
